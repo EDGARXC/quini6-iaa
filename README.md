@@ -1,1 +1,585 @@
 # quini6-ia
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<title>Quini 6 IA</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0f;--surf:#13131e;--surf2:#1c1c2e;--surf3:#22223a;
+  --border:rgba(140,120,255,0.13);--accent:#7c6cfc;--gold:#fcd16c;
+  --green:#5ef0a0;--red:#fc6c9a;--text:#eeeef8;--muted:rgba(238,238,248,0.4);
+}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden;padding-bottom:72px}
+
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(13,13,22,0.97);border-top:1px solid var(--border);display:flex;z-index:200;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(16px)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:9px 0 7px;font-size:9px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;border:none;background:transparent;cursor:pointer;gap:4px;min-height:54px;transition:color .15s}
+.nav-btn.on{color:var(--accent)}
+.nav-icon{font-size:20px;line-height:1}
+
+.sec{display:none;padding:18px 14px 12px;max-width:480px;margin:0 auto}
+.sec.on{display:block}
+
+.hdr{text-align:center;margin-bottom:20px}
+.hdr-badge{font-size:10px;letter-spacing:4px;color:var(--accent);text-transform:uppercase;margin-bottom:8px;font-family:monospace}
+.hdr h1{font-size:32px;font-weight:800;line-height:1.1}
+.hdr h1 b{color:var(--accent)}
+.hdr p{font-size:11px;color:var(--muted);margin-top:5px;font-family:monospace}
+
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:16px}
+.stat{background:var(--surf);border:1px solid var(--border);border-radius:11px;padding:11px 6px;text-align:center}
+.stat-v{font-size:20px;font-weight:800;color:var(--accent);font-family:monospace}
+.stat-l{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+
+.card{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:16px 15px;margin-bottom:12px}
+.clabel{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-family:monospace;margin-bottom:13px;display:flex;align-items:center;gap:6px}
+.clabel::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* BOLETA */
+.boleta{background:linear-gradient(135deg,var(--surf2),var(--surf3));border:1px solid rgba(124,108,252,0.22);border-radius:16px;padding:20px 14px;text-align:center;margin-bottom:12px}
+.boleta-top{font-size:10px;color:var(--muted);font-family:monospace;margin-bottom:12px}
+.balls{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:12px}
+.ball{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;font-family:monospace;transition:all .35s;flex-shrink:0}
+.ball.hot{background:linear-gradient(135deg,#fc6c9a,#e05050);color:#fff;box-shadow:0 0 14px rgba(252,108,154,.4)}
+.ball.warm{background:linear-gradient(135deg,#fcd16c,#f59a3c);color:#1a0800;box-shadow:0 0 14px rgba(252,209,108,.3)}
+.ball.cool{background:linear-gradient(135deg,#6c9afc,#5ab4e8);color:#001025;box-shadow:0 0 14px rgba(108,154,252,.3)}
+.ball.cold{background:linear-gradient(135deg,#5ef0a0,#3ed8c8);color:#001a10;box-shadow:0 0 14px rgba(94,240,160,.3)}
+.ball.empty{background:var(--surf3);color:var(--muted);font-size:20px}
+.ball.hit{outline:3px solid var(--green);outline-offset:2px;box-shadow:0 0 20px rgba(94,240,160,.8)!important}
+.ball.miss{opacity:.3;filter:grayscale(.6)}
+.boleta-sum{font-size:11px;color:var(--muted);font-family:monospace;margin-bottom:14px}
+
+.btn-main{width:100%;padding:17px;border-radius:13px;font-size:17px;font-weight:800;border:none;cursor:pointer;touch-action:manipulation;transition:transform .1s}
+.btn-main:active{transform:scale(.97)}
+.btn-gen{background:var(--accent);color:#fff}
+.btn-gen:disabled{opacity:.45}
+.btn-fetch{background:linear-gradient(135deg,var(--gold),#f0803c);color:#1a0800}
+.btn-fetch:disabled{opacity:.45}
+
+/* STATUS CHIP */
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:11px;font-family:monospace;margin-bottom:10px}
+.chip-wait{background:rgba(252,209,108,.12);color:var(--gold);border:1px solid rgba(252,209,108,.25)}
+.chip-ok{background:rgba(94,240,160,.12);color:var(--green);border:1px solid rgba(94,240,160,.25)}
+.chip-err{background:rgba(252,108,154,.12);color:var(--red);border:1px solid rgba(252,108,154,.25)}
+.chip-loading{background:rgba(124,108,252,.12);color:var(--accent);border:1px solid rgba(124,108,252,.25)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulsing{animation:pulse 1.2s infinite}
+
+/* RESULTADO BOX */
+.res-box{background:var(--surf2);border-radius:12px;padding:14px;margin-top:10px;border:1px solid var(--border)}
+.res-nums{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.rball{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;font-family:monospace;background:var(--surf3);color:var(--muted)}
+.rball.matched{background:rgba(94,240,160,.2);color:var(--green);outline:2px solid var(--green)}
+
+/* REASONING */
+.reasoning{background:var(--surf2);border-radius:11px;padding:14px;font-family:monospace;font-size:12px;line-height:1.8;color:var(--text);white-space:pre-wrap;max-height:240px;overflow-y:auto;border:1px solid var(--border);margin-top:10px}
+.typing::after{content:'▋';animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* SCORE */
+.sbadge{display:inline-block;padding:3px 11px;border-radius:20px;font-size:12px;font-weight:700;font-family:monospace}
+.sb6{background:rgba(94,240,160,.2);color:var(--green)}
+.sb5{background:rgba(252,209,108,.2);color:var(--gold)}
+.sb4{background:rgba(124,108,252,.2);color:var(--accent)}
+.sb3{background:rgba(238,238,248,.1);color:var(--muted)}
+.sb0{color:rgba(238,238,248,.18);font-size:11px}
+
+/* EVO */
+.evo-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:12px}
+.evo-bg{flex:1;height:13px;background:var(--surf2);border-radius:4px;overflow:hidden}
+.evo-fill{height:100%;border-radius:4px}
+.evo-val{min-width:26px;text-align:right;font-family:monospace;color:var(--text)}
+
+/* HIST */
+.hist-item{background:var(--surf2);border-radius:11px;padding:12px 13px;margin-bottom:7px;border:1px solid var(--border)}
+.hist-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.hist-date{font-size:10px;color:var(--muted);font-family:monospace}
+.hist-nums{font-family:monospace;font-size:13px;letter-spacing:.5px}
+.hist-real{font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px}
+.hist-scroll{max-height:380px;overflow-y:auto}
+
+/* HMAP */
+.hmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(42px,1fr));gap:5px}
+.hcell{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;border:1px solid transparent}
+.hcell .hn{font-size:13px;font-weight:700}
+.hcell .hf{font-size:9px;margin-top:1px}
+
+.tabs{display:flex;gap:7px;margin-bottom:13px}
+.tab{flex:1;height:40px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:12px;cursor:pointer;touch-action:manipulation;transition:all .12s}
+.tab.on{background:rgba(124,108,252,.15);border-color:rgba(124,108,252,.4);color:var(--accent)}
+
+.disc{font-size:10px;color:rgba(238,238,248,.15);text-align:center;margin-top:18px;line-height:1.6;font-family:monospace;padding:0 8px}
+</style>
+</head>
+<body>
+
+<!-- ── BOLETA ── -->
+<div class="sec on" id="sec-boleta">
+  <div class="hdr">
+    <div class="hdr-badge">IA Adaptativa · Auto-aprendizaje</div>
+    <h1>Quini 6 <b>IA</b></h1>
+    <p>// genera · busca el resultado · aprende solo</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-v" id="st-n">0</div><div class="stat-l">Sorteos</div></div>
+    <div class="stat"><div class="stat-v" id="st-b">—</div><div class="stat-l">Mejor</div></div>
+    <div class="stat"><div class="stat-v" id="st-p">—</div><div class="stat-l">Prom.</div></div>
+  </div>
+
+  <!-- BOLETA ACTIVA -->
+  <div class="boleta">
+    <div class="boleta-top" id="boleta-top">Sorteo #<span id="sorteo-num">1</span></div>
+    <div class="balls" id="boleta-balls">
+      <div class="ball empty">·</div><div class="ball empty">·</div>
+      <div class="ball empty">·</div><div class="ball empty">·</div>
+      <div class="ball empty">·</div><div class="ball empty">·</div>
+    </div>
+    <div class="boleta-sum" id="boleta-sum">Presioná "Generar" para tu boleta del próximo sorteo</div>
+    <button class="btn-main btn-gen" id="btn-gen" onclick="generarBoleta()">✦ Generar boleta</button>
+  </div>
+
+  <!-- STATUS + BUSCAR RESULTADO -->
+  <div id="fetch-area" style="display:none">
+    <div id="chip-status"></div>
+    <button class="btn-main btn-fetch" id="btn-fetch" onclick="buscarResultado()" style="margin-bottom:12px">
+      🔍 Buscar resultado automáticamente
+    </button>
+
+    <!-- Resultado encontrado -->
+    <div id="resultado-encontrado" style="display:none">
+      <div class="res-box">
+        <div style="font-size:11px;color:var(--muted);font-family:monospace;margin-bottom:6px" id="res-sorteo-label"></div>
+        <div class="res-nums" id="res-nums-display"></div>
+        <div style="text-align:center;margin-top:6px">
+          <span id="score-badge-main"></span>
+          <div style="font-size:13px;color:var(--text);margin-top:5px" id="score-msg"></div>
+        </div>
+        <div style="font-family:monospace;font-size:11px;color:var(--muted);margin-top:10px;line-height:1.7;white-space:pre" id="aprendizaje-info"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAZONAMIENTO -->
+  <div class="card" id="reasoning-card" style="display:none">
+    <div class="clabel" style="color:var(--green)">Análisis de la IA</div>
+    <div class="reasoning typing" id="reasoning-box"></div>
+  </div>
+
+  <p class="disc">El Quini 6 es azar puro · ningún sistema garantiza aciertos · Jugá responsablemente</p>
+</div>
+
+<!-- ── EVOLUCIÓN ── -->
+<div class="sec" id="sec-evo">
+  <div class="card">
+    <div class="clabel">Evolución de aciertos</div>
+    <div id="evo-chart"><p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Sin historial aún</p></div>
+  </div>
+  <div class="card">
+    <div class="clabel">Top pesos adaptativos</div>
+    <p style="font-size:11px;color:var(--muted);margin-bottom:12px;font-family:monospace">Números con mayor peso según el aprendizaje acumulado</p>
+    <div id="weight-chart"></div>
+  </div>
+  <div class="card">
+    <div class="clabel">Resumen</div>
+    <div id="learn-stats"><p style="color:var(--muted);font-size:13px;text-align:center;padding:12px">Jugá al menos 3 sorteos</p></div>
+  </div>
+</div>
+
+<!-- ── HISTORIAL ── -->
+<div class="sec" id="sec-hist">
+  <div class="card">
+    <div class="clabel">Historial de boletas</div>
+    <div class="tabs">
+      <button class="tab on" onclick="filtrarHist('all',this)">Todos</button>
+      <button class="tab" onclick="filtrarHist('good',this)">3+ aciertos</button>
+    </div>
+    <div class="hist-scroll" id="hist-list">
+      <p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">Sin historial</p>
+    </div>
+  </div>
+  <div class="card">
+    <div class="clabel">Mapa de calor</div>
+    <div class="hmap" id="hmap"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:11px">
+      <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:monospace"><div style="width:7px;height:7px;border-radius:50%;background:#fc6c9a;flex-shrink:0"></div>muy frecuente</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:monospace"><div style="width:7px;height:7px;border-radius:50%;background:#fcd16c;flex-shrink:0"></div>frecuente</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:monospace"><div style="width:7px;height:7px;border-radius:50%;background:#7c6cfc;flex-shrink:0"></div>normal</div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);font-family:monospace"><div style="width:7px;height:7px;border-radius:50%;background:#6c9afc;flex-shrink:0"></div>frío</div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <button class="nav-btn on" onclick="showSec('boleta',this)"><span class="nav-icon">🎯</span>Boleta</button>
+  <button class="nav-btn" onclick="showSec('evo',this)"><span class="nav-icon">📈</span>Evolución</button>
+  <button class="nav-btn" onclick="showSec('hist',this)"><span class="nav-icon">📋</span>Historial</button>
+</div>
+
+<script>
+// ─── DATOS HISTÓRICOS BASE ───────────────────────────────────────────────────
+const HIST_BASE = [{"n":3057,"nums":[5,8,15,19,25,35]},{"n":3058,"nums":[6,7,8,10,15,17]},{"n":3059,"nums":[23,33,39,41,43,44]},{"n":3060,"nums":[3,7,9,28,33,36]},{"n":3061,"nums":[2,8,12,16,31,39]},{"n":3062,"nums":[1,15,25,38,39,44]},{"n":3063,"nums":[13,18,26,28,35,45]},{"n":3064,"nums":[7,13,15,28,30,39]},{"n":3065,"nums":[3,13,26,30,33,45]},{"n":3066,"nums":[1,5,20,26,31,39]},{"n":3067,"nums":[4,5,9,11,29,31]},{"n":3068,"nums":[11,14,21,42,43,44]},{"n":3069,"nums":[0,6,7,25,42,43]},{"n":3070,"nums":[8,13,19,30,37,43]},{"n":3071,"nums":[0,7,15,16,36,42]},{"n":3072,"nums":[8,15,24,29,32,36]},{"n":3073,"nums":[0,2,12,13,24,37]},{"n":3074,"nums":[7,13,14,25,35,45]},{"n":3075,"nums":[4,5,7,8,21,23]},{"n":3076,"nums":[6,24,31,40,43,45]},{"n":3077,"nums":[12,17,30,34,35,37]},{"n":3078,"nums":[5,6,10,28,42,43]},{"n":3079,"nums":[1,23,27,30,39,41]},{"n":3080,"nums":[1,4,9,21,32,43]},{"n":3081,"nums":[1,17,20,26,29,31]},{"n":3082,"nums":[18,20,22,36,39,40]},{"n":3083,"nums":[5,7,14,15,19,25]},{"n":3084,"nums":[7,11,15,16,28,38]},{"n":3085,"nums":[2,4,20,27,35,37]},{"n":3086,"nums":[3,10,18,28,32,33]},{"n":3087,"nums":[23,29,32,39,40,42]},{"n":3088,"nums":[3,5,19,20,22,42]},{"n":3089,"nums":[6,8,21,36,40,43]},{"n":3090,"nums":[4,13,18,19,33,42]},{"n":3091,"nums":[6,9,29,30,38,41]},{"n":3092,"nums":[6,9,13,17,26,41]},{"n":3093,"nums":[9,15,19,32,39,42]},{"n":3094,"nums":[1,6,17,21,24,44]},{"n":3095,"nums":[3,5,32,34,40,45]},{"n":3096,"nums":[4,8,15,27,28,45]},{"n":3097,"nums":[3,19,21,28,32,42]},{"n":3098,"nums":[6,21,24,31,41,45]},{"n":3099,"nums":[4,10,15,23,37,43]},{"n":3100,"nums":[6,14,19,23,33,35]},{"n":3101,"nums":[0,4,9,26,41,44]},{"n":3102,"nums":[4,9,23,28,41,45]},{"n":3103,"nums":[4,8,12,14,32,39]},{"n":3104,"nums":[4,11,17,22,29,44]},{"n":3105,"nums":[1,2,19,23,32,38]},{"n":3106,"nums":[10,26,40,41,44,45]},{"n":3107,"nums":[14,17,19,23,25,43]},{"n":3108,"nums":[3,5,11,18,31,38]},{"n":3109,"nums":[8,14,16,30,40,44]},{"n":3110,"nums":[5,9,25,31,38,45]},{"n":3111,"nums":[1,7,10,18,19,20]},{"n":3112,"nums":[2,5,13,23,28,42]},{"n":3113,"nums":[0,12,17,27,35,41]},{"n":3114,"nums":[0,5,8,21,28,39]},{"n":3115,"nums":[3,9,15,18,23,35]},{"n":3116,"nums":[4,7,14,17,18,21]},{"n":3117,"nums":[0,16,17,26,31,40]},{"n":3118,"nums":[8,11,20,32,38,41]},{"n":3119,"nums":[2,11,20,30,36,37]},{"n":3120,"nums":[5,8,17,24,31,33]},{"n":3121,"nums":[19,20,24,29,38,44]},{"n":3122,"nums":[7,14,21,23,36,44]},{"n":3123,"nums":[2,17,29,33,35,39]},{"n":3124,"nums":[3,24,27,31,40,44]},{"n":3125,"nums":[1,4,33,36,39,40]},{"n":3126,"nums":[1,4,8,16,18,35]},{"n":3127,"nums":[1,4,8,16,18,35]},{"n":3128,"nums":[2,10,16,24,26,41]},{"n":3129,"nums":[0,19,21,30,31,39]},{"n":3130,"nums":[2,3,4,15,19,26]},{"n":3131,"nums":[5,9,12,15,17,22]},{"n":3132,"nums":[0,2,6,15,33,35]},{"n":3133,"nums":[1,9,11,19,37,40]},{"n":3134,"nums":[12,25,31,34,35,39]},{"n":3135,"nums":[11,12,16,23,39,44]},{"n":3136,"nums":[0,7,9,15,19,35]},{"n":3137,"nums":[6,8,17,33,41,43]},{"n":3138,"nums":[8,16,32,36,39,45]},{"n":3139,"nums":[4,5,21,25,30,35]},{"n":3140,"nums":[7,16,26,30,40,41]},{"n":3141,"nums":[10,11,15,36,38,45]},{"n":3142,"nums":[2,4,19,31,32,40]},{"n":3143,"nums":[4,16,17,31,35,39]},{"n":3144,"nums":[10,29,33,34,37,44]},{"n":3145,"nums":[6,12,24,30,38,45]},{"n":3146,"nums":[0,7,14,25,41,44]},{"n":3147,"nums":[12,23,31,33,35,41]},{"n":3148,"nums":[3,5,8,12,17,37]},{"n":3149,"nums":[0,2,8,10,26,42]},{"n":3150,"nums":[12,15,35,40,41,45]},{"n":3151,"nums":[7,12,17,26,39,41]},{"n":3152,"nums":[5,15,16,35,44,45]},{"n":3153,"nums":[9,18,24,26,27,42]},{"n":3154,"nums":[7,13,25,30,33,42]},{"n":3155,"nums":[9,10,11,21,26,37]},{"n":3156,"nums":[3,8,11,18,21,26]},{"n":3157,"nums":[9,14,22,28,29,41]},{"n":3158,"nums":[9,30,33,39,41,44]},{"n":3159,"nums":[4,24,36,40,42,44]},{"n":3160,"nums":[5,9,22,23,25,43]},{"n":3161,"nums":[3,19,23,29,32,35]},{"n":3162,"nums":[3,7,19,25,38,43]},{"n":3163,"nums":[1,5,7,18,27,35]},{"n":3164,"nums":[12,14,16,21,27,36]},{"n":3165,"nums":[1,3,17,19,24,30]},{"n":3166,"nums":[2,5,15,29,31,39]},{"n":3167,"nums":[10,22,26,29,30,41]},{"n":3168,"nums":[0,4,5,17,27,42]},{"n":3169,"nums":[11,27,31,40,42,44]},{"n":3170,"nums":[0,6,8,34,37,42]},{"n":3171,"nums":[3,5,9,18,24,35]},{"n":3172,"nums":[5,9,13,14,32,34]},{"n":3173,"nums":[15,17,18,25,30,35]},{"n":3174,"nums":[30,31,39,40,41,42]},{"n":3175,"nums":[1,2,6,24,27,32]},{"n":3176,"nums":[1,9,11,13,36,42]},{"n":3177,"nums":[6,8,13,14,25,34]},{"n":3178,"nums":[20,22,24,25,31,35]},{"n":3179,"nums":[1,9,27,29,35,36]},{"n":3180,"nums":[10,11,12,21,34,39]},{"n":3181,"nums":[2,15,17,19,20,36]},{"n":3182,"nums":[7,20,25,35,39,43]},{"n":3183,"nums":[2,7,22,32,38,41]},{"n":3184,"nums":[3,6,16,19,35,42]},{"n":3185,"nums":[2,6,7,20,34,36]},{"n":3186,"nums":[9,15,21,23,27,44]},{"n":3187,"nums":[0,10,27,38,41,42]},{"n":3188,"nums":[9,13,20,27,28,40]},{"n":3189,"nums":[2,6,23,25,34,39]},{"n":3190,"nums":[0,5,14,26,30,45]},{"n":3191,"nums":[10,16,24,27,33,43]},{"n":3192,"nums":[1,5,14,26,43,45]},{"n":3193,"nums":[7,16,18,24,25,27]},{"n":3194,"nums":[12,15,27,38,39,41]},{"n":3195,"nums":[11,17,19,35,43,44]},{"n":3196,"nums":[3,7,15,31,37,44]},{"n":3197,"nums":[3,6,25,27,34,40]},{"n":3198,"nums":[1,5,6,8,14,22]},{"n":3199,"nums":[22,24,31,33,34,42]},{"n":3200,"nums":[2,5,8,21,25,40]},{"n":3201,"nums":[9,12,14,23,28,39]},{"n":3202,"nums":[19,21,29,35,38,42]},{"n":3203,"nums":[5,15,23,26,31,45]},{"n":3204,"nums":[0,8,13,14,15,24]},{"n":3205,"nums":[5,9,17,29,37,43]},{"n":3206,"nums":[5,14,15,20,23,39]},{"n":3207,"nums":[0,23,25,28,31,34]},{"n":3208,"nums":[2,7,23,25,27,38]},{"n":3209,"nums":[14,19,20,35,37,45]},{"n":3210,"nums":[5,15,17,26,29,38]},{"n":3211,"nums":[3,6,11,16,34,43]},{"n":3212,"nums":[8,12,19,25,28,41]},{"n":3213,"nums":[2,3,10,40,42,43]},{"n":3214,"nums":[3,12,26,35,39,42]},{"n":3215,"nums":[9,20,28,30,35,39]},{"n":3216,"nums":[9,20,28,30,35,39]},{"n":3217,"nums":[4,11,18,19,24,35]},{"n":3218,"nums":[1,3,12,19,26,28]},{"n":3219,"nums":[10,16,19,20,27,43]},{"n":3220,"nums":[6,12,14,21,26,35]},{"n":3221,"nums":[5,6,7,9,29,41]},{"n":3222,"nums":[2,18,22,31,34,35]},{"n":3223,"nums":[0,1,35,37,39,41]},{"n":3224,"nums":[3,4,15,23,33,34]},{"n":3225,"nums":[2,10,23,24,32,42]},{"n":3226,"nums":[4,6,7,12,13,29]},{"n":3227,"nums":[2,9,16,20,27,36]},{"n":3228,"nums":[9,11,15,27,40,42]},{"n":3229,"nums":[0,17,20,29,35,39]},{"n":3230,"nums":[15,28,34,38,41,45]},{"n":3231,"nums":[8,13,26,28,31,36]},{"n":3232,"nums":[11,12,14,29,37,44]},{"n":3233,"nums":[9,16,19,23,27,44]},{"n":3234,"nums":[16,20,21,24,28,34]},{"n":3235,"nums":[11,15,22,37,38,43]},{"n":3236,"nums":[11,14,15,19,26,42]},{"n":3237,"nums":[0,18,22,29,35,39]},{"n":3238,"nums":[3,10,16,22,42,44]},{"n":3239,"nums":[0,2,9,13,14,25]},{"n":3240,"nums":[1,5,31,32,35,38]},{"n":3241,"nums":[0,7,16,29,31,43]},{"n":3242,"nums":[0,1,2,18,29,42]},{"n":3243,"nums":[16,17,19,25,39,43]},{"n":3244,"nums":[16,17,26,28,36,37]},{"n":3245,"nums":[9,22,25,31,37,42]},{"n":3246,"nums":[23,29,31,32,39,45]},{"n":3247,"nums":[3,16,21,29,36,45]},{"n":3248,"nums":[7,10,22,33,41,42]},{"n":3249,"nums":[9,16,34,38,42,43]},{"n":3250,"nums":[0,6,17,18,38,45]},{"n":3251,"nums":[10,12,13,19,22,44]},{"n":3252,"nums":[11,16,18,22,33,34]},{"n":3253,"nums":[0,5,12,26,29,42]},{"n":3254,"nums":[8,18,33,37,39,44]},{"n":3255,"nums":[0,1,11,13,27,44]},{"n":3256,"nums":[1,5,20,21,29,30]},{"n":3257,"nums":[3,16,17,25,29,38]},{"n":3258,"nums":[5,8,12,28,39,40]},{"n":3259,"nums":[2,5,9,13,29,38]},{"n":3260,"nums":[9,18,22,41,42,44]},{"n":3261,"nums":[5,8,14,18,25,31]},{"n":3262,"nums":[4,20,36,37,40,45]},{"n":3263,"nums":[2,6,7,17,36,45]},{"n":3264,"nums":[2,15,21,29,33,36]},{"n":3265,"nums":[3,26,29,30,33,43]},{"n":3266,"nums":[1,15,30,42,43,45]},{"n":3267,"nums":[7,13,24,33,37,45]},{"n":3268,"nums":[4,14,16,31,41,43]},{"n":3290,"nums":[0,5,23,24,36,37]},{"n":3291,"nums":[10,20,24,30,35,43]},{"n":3292,"nums":[2,7,18,21,23,39]},{"n":3293,"nums":[0,18,26,29,32,42]},{"n":3294,"nums":[1,2,9,32,36,44]},{"n":3295,"nums":[16,18,20,22,28,31]},{"n":3296,"nums":[2,6,7,30,40,43]},{"n":3297,"nums":[5,14,16,18,32,42]},{"n":3299,"nums":[8,10,11,17,38,45]},{"n":3300,"nums":[21,22,26,28,30,36]},{"n":3301,"nums":[20,24,29,33,39,43]},{"n":3302,"nums":[5,18,19,28,39,40]},{"n":3303,"nums":[16,21,27,29,31,32]},{"n":3304,"nums":[4,7,9,15,19,42]},{"n":3305,"nums":[4,12,19,39,40,44]},{"n":3306,"nums":[1,16,19,21,35,38]},{"n":3307,"nums":[12,18,21,34,37,41]},{"n":3310,"nums":[5,6,9,32,34,44]},{"n":3311,"nums":[12,13,14,23,34,40]},{"n":3312,"nums":[4,6,16,25,29,43]},{"n":3313,"nums":[3,4,6,31,35,43]},{"n":3314,"nums":[0,14,17,21,39,43]},{"n":3318,"nums":[8,16,23,25,26,33]},{"n":3319,"nums":[9,12,21,29,33,36]},{"n":3320,"nums":[2,5,9,26,28,45]},{"n":3321,"nums":[2,9,16,20,38,45]},{"n":3322,"nums":[3,14,17,21,39,42]},{"n":3323,"nums":[12,14,24,29,37,45]},{"n":3324,"nums":[16,18,19,21,27,40]},{"n":3325,"nums":[2,4,10,18,32,44]},{"n":3326,"nums":[4,11,21,25,40,44]},{"n":4471,"nums":[8,9,14,33,41,45]},{"n":4472,"nums":[4,9,27,29,39,40]},{"n":4473,"nums":[14,15,17,28,32,34]},{"n":4474,"nums":[7,18,25,27,37,41]},{"n":4475,"nums":[3,17,31,33,34,38]},{"n":4476,"nums":[8,11,14,17,18,31]},{"n":4477,"nums":[0,7,16,20,21,42]},{"n":4478,"nums":[6,7,8,20,25,33]},{"n":4479,"nums":[2,4,15,18,31,43]},{"n":4480,"nums":[3,12,25,33,42,45]},{"n":4481,"nums":[18,23,24,40,44,45]},{"n":4482,"nums":[0,9,20,23,33,44]},{"n":4483,"nums":[6,12,24,26,40,41]},{"n":4484,"nums":[0,2,23,26,30,40]},{"n":4485,"nums":[0,5,27,36,39,45]},{"n":4486,"nums":[3,9,10,23,40,42]},{"n":4487,"nums":[10,12,18,19,20,27]},{"n":4488,"nums":[6,7,10,15,25,41]},{"n":4489,"nums":[0,6,10,13,21,37]},{"n":4490,"nums":[9,11,12,14,18,20]},{"n":4491,"nums":[2,4,8,12,15,36]},{"n":4492,"nums":[8,12,18,37,40,42]},{"n":4493,"nums":[3,18,22,26,34,44]},{"n":4494,"nums":[10,13,18,28,34,37]},{"n":4495,"nums":[1,9,15,18,19,38]},{"n":4496,"nums":[8,16,20,21,30,41]},{"n":4497,"nums":[20,22,27,29,34,43]},{"n":4498,"nums":[1,16,31,32,34,44]},{"n":4499,"nums":[1,14,33,38,41,44]},{"n":4500,"nums":[4,6,7,9,24,35]},{"n":4501,"nums":[5,6,32,33,35,38]}];
+
+// ─── FRECUENCIA BASE ────────────────────────────────────────────────────────
+const BASE_FREQ = new Array(46).fill(0);
+HIST_BASE.forEach(s => s.nums.forEach(n => BASE_FREQ[n]++));
+
+// ─── ESTADO ─────────────────────────────────────────────────────────────────
+let S = JSON.parse(localStorage.getItem('q6v2') || 'null');
+if (!S) {
+  const maxF = Math.max(...BASE_FREQ);
+  S = {
+    weights: BASE_FREQ.map(f => 0.5 + (f / maxF) * 0.5),
+    sorteoNum: 1,
+    boleta: null,
+    pendiente: false,        // boleta generada esperando resultado
+    ultimoSorteoOficial: null, // último nro sorteo oficial procesado
+    historial: [],
+    totalHits: 0,
+    mejor: 0
+  };
+  guardar();
+}
+
+function guardar() { localStorage.setItem('q6v2', JSON.stringify(S)); }
+
+// ─── NAV ────────────────────────────────────────────────────────────────────
+function showSec(id, btn) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('on'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('sec-' + id).classList.add('on');
+  btn.classList.add('on');
+  if (id === 'evo') renderEvo();
+  if (id === 'hist') { renderHist('all'); buildHmap(); }
+}
+
+// ─── GENERAR BOLETA ─────────────────────────────────────────────────────────
+function generarBoleta() {
+  if (S.pendiente) { alert('Primero buscá el resultado del sorteo anterior.'); return; }
+  const nums = elegir();
+  S.boleta = nums;
+  S.pendiente = true;
+  guardar();
+  mostrarBoleta(nums, false, []);
+  document.getElementById('btn-gen').disabled = true;
+  document.getElementById('btn-gen').textContent = 'Boleta generada ✓';
+  document.getElementById('fetch-area').style.display = 'block';
+  document.getElementById('resultado-encontrado').style.display = 'none';
+  setChip('wait', '⏳ Generá y jugá tu boleta, luego buscá el resultado');
+  document.getElementById('reasoning-card').style.display = 'block';
+  streamReasoning(nums);
+  updateStats();
+}
+
+function elegir() {
+  const lastSet = new Set(HIST_BASE.slice(-1)[0].nums);
+  const lastUser = S.historial.length > 0 ? S.historial[S.historial.length-1].real : [];
+  lastUser.forEach(n => lastSet.add(n));
+  const scores = S.weights.map((w, i) => {
+    const rf = calcReciente(i, 20);
+    const pen = lastSet.has(i) ? 0.82 : 1.0;
+    return { n: i, s: w * 0.55 + rf * 0.3 + Math.random() * 0.15 * pen };
+  });
+  const zonas = [[0,9],[10,19],[20,29],[30,39],[40,45]];
+  const elegidos = new Set();
+  for (const [lo, hi] of zonas) {
+    if (elegidos.size >= 6) break;
+    const z = scores.filter(x => x.n >= lo && x.n <= hi && !elegidos.has(x.n)).sort((a,b) => b.s - a.s);
+    if (z.length) elegidos.add(z[0].n);
+  }
+  scores.sort((a,b) => b.s - a.s);
+  for (const {n} of scores) { if (elegidos.size >= 6) break; if (!elegidos.has(n)) elegidos.add(n); }
+  return Array.from(elegidos).sort((a,b) => a-b);
+}
+
+function calcReciente(n, v) {
+  return HIST_BASE.slice(-v).filter(s => s.nums.includes(n)).length / v;
+}
+
+// ─── MOSTRAR BOLETA ─────────────────────────────────────────────────────────
+function mostrarBoleta(nums, conRes, hits) {
+  const c = document.getElementById('boleta-balls');
+  c.innerHTML = '';
+  const rs = new Set(hits);
+  nums.forEach(n => {
+    const b = document.createElement('div');
+    const f = BASE_FREQ[n];
+    b.className = 'ball ' + (f>=55?'hot':f>=47?'warm':f>=38?'cool':'cold');
+    if (conRes) b.classList.add(rs.has(n)?'hit':'miss');
+    b.textContent = String(n).padStart(2,'0');
+    c.appendChild(b);
+  });
+  const suma = nums.reduce((a,b) => a+b, 0);
+  document.getElementById('boleta-sum').textContent = `Suma: ${suma}  ·  Sorteo #${S.sorteoNum}`;
+  document.getElementById('sorteo-num').textContent = S.sorteoNum;
+}
+
+// ─── BUSCAR RESULTADO AUTOMÁTICAMENTE (vía Claude API + web search) ─────────
+async function buscarResultado() {
+  if (!S.boleta) { alert('Primero generá tu boleta'); return; }
+  const btn = document.getElementById('btn-fetch');
+  btn.disabled = true;
+  btn.textContent = '🔍 Buscando...';
+  setChip('loading', '🔍 Consultando resultados en tiempo real...');
+
+  const today = new Date();
+  const fecha = today.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+
+  const prompt = `Buscá el resultado MÁS RECIENTE del sorteo TRADICIONAL del Quini 6 de Argentina.
+Hoy es ${fecha}. Los sorteos son los miércoles y domingos a las 21:15hs.
+Buscá en sitios como quini-6-resultados.com.ar, lanacion.com.ar o similares.
+
+Respondé ÚNICAMENTE con este JSON exacto, sin texto adicional:
+{
+  "sorteo": <número de sorteo>,
+  "fecha": "<DD/MM/YYYY>",
+  "nums": [<n1>, <n2>, <n3>, <n4>, <n5>, <n6>]
+}
+
+Los 6 números deben ser del Tradicional, ordenados de menor a mayor, entre 0 y 45.
+Si no encontrás el resultado, respondé: {"error": "no encontrado"}`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 200,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+
+    // Extraer JSON de la respuesta
+    const match = text.match(/\{[\s\S]*?\}/);
+    if (!match) throw new Error('Sin JSON');
+    const result = JSON.parse(match[0]);
+    if (result.error) throw new Error(result.error);
+
+    const real = result.nums.map(Number).sort((a,b) => a-b);
+    if (real.length !== 6 || real.some(n => isNaN(n) || n < 0 || n > 45)) throw new Error('Números inválidos');
+
+    // Verificar que no procesamos este sorteo ya
+    if (S.ultimoSorteoOficial && result.sorteo <= S.ultimoSorteoOficial) {
+      setChip('wait', `⏳ El último sorteo disponible (${result.sorteo}) ya fue procesado. Esperá el próximo.`);
+      btn.disabled = false;
+      btn.textContent = '🔍 Buscar resultado';
+      return;
+    }
+
+    procesarResultado(real, result.sorteo, result.fecha);
+
+  } catch (e) {
+    setChip('err', '❌ No se pudo obtener el resultado. Intentá más tarde.');
+    btn.disabled = false;
+    btn.textContent = '🔍 Reintentar';
+  }
+}
+
+// ─── PROCESAR Y APRENDER ────────────────────────────────────────────────────
+function procesarResultado(real, sorteoOficial, fecha) {
+  const pred = S.boleta;
+  const predSet = new Set(pred);
+  const hits = real.filter(n => predSet.has(n));
+  const score = hits.length;
+
+  // Aprendizaje adaptativo
+  const ALPHA_HIT = 0.06, ALPHA_MISS_PRED = 0.03, ALPHA_MISS_REAL = 0.04, DECAY = 0.995;
+  const realSet = new Set(real);
+  const oldWeights = [...S.weights];
+  const nw = S.weights.map((w, i) => {
+    let v = w * DECAY;
+    if (predSet.has(i) && realSet.has(i))  v += ALPHA_HIT;
+    if (predSet.has(i) && !realSet.has(i)) v -= ALPHA_MISS_PRED;
+    if (!predSet.has(i) && realSet.has(i)) v += ALPHA_MISS_REAL;
+    return Math.max(0.05, Math.min(1.5, v));
+  });
+
+  const entrada = { sorteo: S.sorteoNum, sorteoOficial, fecha: fecha || new Date().toLocaleDateString('es-AR'), pred: [...pred], real: [...real], hits: [...hits], score };
+  S.weights = nw;
+  S.historial.push(entrada);
+  S.totalHits += score;
+  if (score > S.mejor) S.mejor = score;
+  S.ultimoSorteoOficial = sorteoOficial;
+  S.sorteoNum++;
+  S.boleta = null;
+  S.pendiente = false;
+  guardar();
+
+  // UI: mostrar boleta con hits/miss
+  mostrarBoleta(pred, true, hits);
+
+  // Chip OK
+  setChip('ok', `✅ Sorteo ${sorteoOficial} del ${fecha} encontrado`);
+  document.getElementById('btn-fetch').style.display = 'none';
+
+  // Mostrar resultado
+  const rd = document.getElementById('resultado-encontrado');
+  rd.style.display = 'block';
+  document.getElementById('res-sorteo-label').textContent = `Sorteo Tradicional ${sorteoOficial} · ${fecha}`;
+
+  // Bolitas del resultado real
+  const rn = document.getElementById('res-nums-display');
+  rn.innerHTML = real.map(n => `<div class="rball${predSet.has(n)?' matched':''}">${String(n).padStart(2,'0')}</div>`).join('');
+
+  // Score
+  const sc = score>=6?'sb6':score>=5?'sb5':score>=4?'sb4':score>=3?'sb3':'sb0';
+  const msgs = {6:'¡GANASTE EL POZO! 🎉🏆',5:'¡5 aciertos! 🌟',4:'¡4 aciertos! 💫',3:'3 aciertos 👍',2:'2 aciertos',1:'1 acierto',0:'Sin aciertos esta vez'};
+  document.getElementById('score-badge-main').innerHTML = `<span class="sbadge ${sc}">${msgs[score]}</span>`;
+  document.getElementById('score-msg').textContent = `${score}/6 aciertos`;
+
+  // Info aprendizaje
+  const cambiaron = [];
+  for (let i = 0; i < 46; i++) {
+    const d = nw[i] - oldWeights[i];
+    if (Math.abs(d) > 0.015) cambiaron.push(`${String(i).padStart(2,'0')} ${d>0?'↑':'↓'}${Math.abs(d).toFixed(2)}`);
+  }
+  const prom = (S.totalHits / S.historial.length).toFixed(2);
+  document.getElementById('aprendizaje-info').textContent =
+    `Pesos ajustados: ${cambiaron.slice(0,6).join('  ')}\nPromedio: ${prom} aciertos/sorteo  ·  Mejor: ${S.mejor}/6`;
+
+  // Botón siguiente
+  document.getElementById('btn-gen').disabled = false;
+  document.getElementById('btn-gen').textContent = '✦ Generar próxima boleta';
+  document.getElementById('reasoning-card').style.display = 'none';
+  updateStats();
+}
+
+// ─── RAZONAMIENTO IA ────────────────────────────────────────────────────────
+async function streamReasoning(nums) {
+  const box = document.getElementById('reasoning-box');
+  box.textContent = ''; box.classList.add('typing');
+  const topW = S.weights.map((w,i)=>({n:i,w})).sort((a,b)=>b.w-a.w).slice(0,8).map(x=>`${x.n}(${x.w.toFixed(2)})`).join(', ');
+  const hist5 = S.historial.slice(-3).map(h=>`#${h.sorteo}: pred=[${h.pred}] real=[${h.real}] → ${h.score} aciertos`).join('\n  ');
+  const prompt = `Sos el sistema IA adaptativo del Quini 6. Generaste esta boleta para el sorteo #${S.sorteoNum}:
+Números: [${nums.join(', ')}] — Suma: ${nums.reduce((a,b)=>a+b,0)}
+Pesos más altos: ${topW}
+Historial reciente:\n  ${hist5 || '(primer sorteo)'}
+
+Explicá en 4-5 líneas en español rioplatense por qué elegiste estos números según el aprendizaje acumulado. Sé directo y técnico. Sin viñetas.`;
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:400, stream:true, messages:[{role:'user',content:prompt}] })
+    });
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf = '';
+    while (true) {
+      const {done, value} = await reader.read(); if (done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try { const o = JSON.parse(line.slice(6)); if (o.type==='content_block_delta'&&o.delta?.text){box.textContent+=o.delta.text;box.scrollTop=box.scrollHeight;} } catch{}
+        }
+      }
+    }
+  } catch { box.textContent = `Boleta: ${nums.join(' - ')}\nSuma: ${nums.reduce((a,b)=>a+b,0)}\nZonas: ${[...new Set(nums.map(n=>Math.floor(n/10)*10))].map(z=>z+'-'+Math.min(z+9,45)).join(', ')}`; }
+  box.classList.remove('typing');
+}
+
+// ─── CHIP ────────────────────────────────────────────────────────────────────
+function setChip(type, msg) {
+  const el = document.getElementById('chip-status');
+  const cls = {wait:'chip-wait',ok:'chip-ok',err:'chip-err',loading:'chip-loading pulsing'}[type];
+  el.innerHTML = `<div class="chip ${cls}">${msg}</div>`;
+}
+
+// ─── STATS ──────────────────────────────────────────────────────────────────
+function updateStats() {
+  document.getElementById('st-n').textContent = S.historial.length;
+  document.getElementById('st-b').textContent = S.mejor > 0 ? S.mejor+'/6' : '—';
+  const p = S.historial.length > 0 ? (S.totalHits/S.historial.length).toFixed(1) : '—';
+  document.getElementById('st-p').textContent = p;
+}
+
+// ─── EVOLUCIÓN ──────────────────────────────────────────────────────────────
+function renderEvo() {
+  const chart = document.getElementById('evo-chart');
+  if (!S.historial.length) { chart.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:16px">Sin historial</p>'; }
+  else {
+    chart.innerHTML = S.historial.slice(-15).map(h => {
+      const pct = Math.round(h.score/6*100);
+      const col = h.score>=4?'var(--green)':h.score>=2?'var(--gold)':'var(--accent)';
+      return `<div class="evo-row"><div style="min-width:48px;font-family:monospace;font-size:10px;color:var(--muted)">#${h.sorteo}</div><div class="evo-bg"><div class="evo-fill" style="width:${pct}%;background:${col}"></div></div><div class="evo-val">${h.score}/6</div></div>`;
+    }).join('');
+  }
+  const wc = document.getElementById('weight-chart');
+  const top = S.weights.map((w,i)=>({n:i,w})).sort((a,b)=>b.w-a.w).slice(0,12);
+  const mw = top[0].w;
+  wc.innerHTML = top.map(({n,w}) => `<div class="evo-row"><div style="min-width:26px;font-family:monospace;font-size:11px;font-weight:700;color:var(--text)">${String(n).padStart(2,'0')}</div><div class="evo-bg"><div class="evo-fill" style="width:${Math.round(w/mw*100)}%;background:var(--accent)"></div></div><div class="evo-val" style="font-size:10px">${w.toFixed(2)}</div></div>`).join('');
+  const ls = document.getElementById('learn-stats');
+  if (S.historial.length < 2) { ls.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:10px">Jugá al menos 2 sorteos</p>'; }
+  else {
+    const n = S.historial.length, prom = (S.totalHits/n).toFixed(2);
+    const ult = S.historial.slice(-3).map(h=>h.score);
+    const tend = ult.length>=2?(ult[ult.length-1]>=ult[0]?'📈 Mejorando':'📊 Fluctuando'):'—';
+    ls.innerHTML = `<div style="font-family:monospace;font-size:12px;line-height:2.1;color:var(--text)">
+      <div>Sorteos: <b style="color:var(--accent)">${n}</b></div>
+      <div>Total aciertos: <b style="color:var(--accent)">${S.totalHits}</b></div>
+      <div>Promedio: <b style="color:var(--gold)">${prom}/sorteo</b></div>
+      <div>Mejor: <b style="color:var(--green)">${S.mejor}/6</b></div>
+      <div>Tendencia: <b>${tend}</b></div>
+    </div>`;
+  }
+}
+
+// ─── HISTORIAL ──────────────────────────────────────────────────────────────
+function renderHist(f) {
+  const list = document.getElementById('hist-list');
+  const items = f==='good' ? S.historial.filter(h=>h.score>=3) : S.historial;
+  if (!items.length) { list.innerHTML = `<p style="color:var(--muted);font-size:13px;text-align:center;padding:18px">${f==='good'?'Sin 3+ aciertos aún':'Sin historial'}</p>`; return; }
+  list.innerHTML = [...items].reverse().map(h => {
+    const sc = h.score>=6?'sb6':h.score>=5?'sb5':h.score>=4?'sb4':h.score>=3?'sb3':'sb0';
+    const hs = new Set(h.hits);
+    const ps = h.pred.map(n=>`<span style="color:${hs.has(n)?'var(--green)':'var(--text)'};font-weight:${hs.has(n)?700:400}">${String(n).padStart(2,'0')}</span>`).join(' ');
+    const rs = h.real.map(n=>String(n).padStart(2,'0')).join(' ');
+    return `<div class="hist-item"><div class="hist-top"><div class="hist-date">#${h.sorteo} · ${h.fecha||''}</div><span class="sbadge ${sc}">${h.score}/6</span></div><div class="hist-nums">${ps}</div><div class="hist-real">Real: ${rs}</div></div>`;
+  }).join('');
+}
+function filtrarHist(f, btn) { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on')); btn.classList.add('on'); renderHist(f); }
+
+// ─── HEATMAP ────────────────────────────────────────────────────────────────
+function buildHmap() {
+  const g = document.getElementById('hmap'); g.innerHTML = '';
+  for (let i = 0; i < 46; i++) {
+    const f = BASE_FREQ[i], w = S.weights[i];
+    let bg, tc;
+    if (f>=55){bg='rgba(252,108,154,0.22)';tc='#fc6c9a';}
+    else if(f>=47){bg='rgba(252,209,108,0.18)';tc='#fcd16c';}
+    else if(f>=38){bg='rgba(124,108,252,0.14)';tc='#9080ff';}
+    else{bg='rgba(108,154,252,0.10)';tc='#6c9afc';}
+    const border = w > 1.0 ? '1px solid rgba(94,240,160,0.45)' : '1px solid transparent';
+    const cell = document.createElement('div');
+    cell.className = 'hcell'; cell.style.cssText = `background:${bg};border:${border}`;
+    cell.innerHTML = `<span class="hn" style="color:${tc}">${String(i).padStart(2,'0')}</span><span class="hf" style="color:${tc}88">${f}x</span>`;
+    g.appendChild(cell);
+  }
+}
+
+// ─── RESTAURAR ──────────────────────────────────────────────────────────────
+(function init() {
+  updateStats();
+  document.getElementById('sorteo-num').textContent = S.sorteoNum;
+  if (S.pendiente && S.boleta) {
+    mostrarBoleta(S.boleta, false, []);
+    document.getElementById('btn-gen').disabled = true;
+    document.getElementById('btn-gen').textContent = 'Boleta generada ✓';
+    document.getElementById('fetch-area').style.display = 'block';
+    setChip('wait', '⏳ Boleta lista. Buscá el resultado cuando haya sorteo.');
+    document.getElementById('reasoning-card').style.display = 'none';
+  } else {
+    document.getElementById('btn-gen').textContent = S.sorteoNum===1 ? '✦ Generar boleta' : '✦ Generar próxima boleta';
+  }
+})();
+</script>
+</body>
+</html>
